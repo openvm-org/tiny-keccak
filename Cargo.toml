@@ -13,7 +13,9 @@ categories = ["cryptography", "no-std"]
 
 [dependencies]
 crunchy = "0.2.2"
-openvm-keccak256-guest = { git = "https://github.com/openvm-org/openvm", branch = "feat/new-keccak", package = "openvm-keccak256-guest" }
+
+[target.'cfg(target_os = "zkvm")'.dependencies]
+openvm-new-keccak256-guest = { git = "https://github.com/openvm-org/openvm", branch = "develop-new-keccak" }
 
 [profile.dev]
 opt-level = 3  # Controls the --opt-level the compiler builds with

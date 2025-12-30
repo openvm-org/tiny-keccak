@@ -333,19 +333,28 @@ impl Buffer {
         self.execute(offset, len, |buffer| dst[..len].copy_from_slice(buffer));
     }
 
-    fn xorin_openvm_opcode(&mut self, mut buffer_ptr: *mut u8, input_ptr: *const u8, len: usize) {
-        let buf_u8: &mut [u8; 200] = unsafe { &mut *(buffer_ptr as *mut [u8; 200]) };
-        let input_u8: &[u8] = unsafe { core::slice::from_raw_parts(input_ptr as *const u8, len) };
-
-        for i in 0..len {
-            buf_u8[i] ^= input_u8[i];
-        }
+    #[cfg(not(target_os = "zkvm"))]
+    fn xorin(&mut self, src: &[u8], offset: usize, len: usize) {
+        self.execute(offset, len, |dst| {
+            assert!(dst.len() <= src.len());
+            let len = dst.len();
+            let mut dst_ptr = dst.as_mut_ptr();
+            let mut src_ptr = src.as_ptr();
+            for _ in 0..len {
+                unsafe {
+                    *dst_ptr ^= *src_ptr;
+                    src_ptr = src_ptr.offset(1);
+                    dst_ptr = dst_ptr.offset(1);
+                }
+            }
+        });
     }
 
+    #[cfg(target_os = "zkvm")]
     fn xorin(&mut self, src: &[u8], offset: usize, len: usize) {
         let buffer_ptr = unsafe { (self.0.as_mut_ptr() as *mut u8).add(offset) };
         let input_ptr = src.as_ptr();
-        self.xorin_openvm_opcode(buffer_ptr, input_ptr, len);
+        openvm_new_keccak256_guest::native_xorin(buffer_ptr, input_ptr, len);
     }
 
     fn pad(&mut self, offset: usize, delim: u8, rate: usize) {
@@ -399,14 +408,15 @@ impl<P: Permutation> KeccakState<P> {
         }
     }
 
-    fn keccak_openvm_opcode(&mut self, mut buffer_ptr: *mut u8) {
-        let buffer: &mut Buffer = unsafe { &mut *(buffer_ptr as *mut Buffer) };
-        keccakf(buffer.words());
+    #[cfg(not(target_os = "zkvm"))]
+    fn keccak(&mut self) {
+        P::execute(&mut self.buffer);
     }
 
+    #[cfg(target_os = "zkvm")]
     fn keccak(&mut self) {
         let buffer_ptr = unsafe { self.buffer.0.as_mut_ptr() as *mut u8 };
-        self.keccak_openvm_opcode(buffer_ptr);
+        openvm_new_keccak256_guest::native_keccakf(buffer_ptr);
     }
 
     fn update(&mut self, input: &[u8]) {
