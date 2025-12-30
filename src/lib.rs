@@ -333,6 +333,7 @@ impl Buffer {
         self.execute(offset, len, |buffer| dst[..len].copy_from_slice(buffer));
     }
 
+    #[cfg(not(target_os = "zkvm"))]
     fn xorin(&mut self, src: &[u8], offset: usize, len: usize) {
         self.execute(offset, len, |dst| {
             assert!(dst.len() <= src.len());
@@ -347,6 +348,13 @@ impl Buffer {
                 }
             }
         });
+    }
+
+    #[cfg(target_os = "zkvm")]
+    fn xorin(&mut self, src: &[u8], offset: usize, len: usize) {
+        let buffer_ptr = unsafe { (self.0.as_mut_ptr() as *mut u8).add(offset) };
+        let input_ptr = src.as_ptr();
+        openvm_new_keccak256_guest::native_xorin(buffer_ptr, input_ptr, len);
     }
 
     fn pad(&mut self, offset: usize, delim: u8, rate: usize) {
@@ -400,8 +408,15 @@ impl<P: Permutation> KeccakState<P> {
         }
     }
 
+    #[cfg(not(target_os = "zkvm"))]
     fn keccak(&mut self) {
         P::execute(&mut self.buffer);
+    }
+
+    #[cfg(target_os = "zkvm")]
+    fn keccak(&mut self) {
+        let buffer_ptr = unsafe { self.buffer.0.as_mut_ptr() as *mut u8 };
+        openvm_new_keccak256_guest::native_keccakf(buffer_ptr);
     }
 
     fn update(&mut self, input: &[u8]) {
