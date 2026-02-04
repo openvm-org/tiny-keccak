@@ -1,0 +1,19 @@
+[package]
+name = "zkvm-test"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tiny-keccak = { version = "2.0", features = ["keccak"] }
+openvm = { git = "https://github.com/openvm-org/openvm", branch = "feat/keccak-hasher" }
+hex = { version = "0.4", default-features = false, features = ["alloc"] }
+
+[[bin]]
+name = "zkvm-test"
+path = "src/main.rs"
+
+# Keep this package independent from the parent workspace
+[workspace]
+
+[patch.crates-io]
+tiny-keccak = { path = "../" }
