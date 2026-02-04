@@ -2,6 +2,9 @@
 
 use super::{bits_to_rate, keccakf::KeccakF, Hasher, KeccakState};
 
+#[cfg(target_os = "zkvm")]
+use openvm_keccak256::Keccak256;
+
 /// The `Keccak` hash functions defined in [`Keccak SHA3 submission`].
 ///
 /// # Usage
@@ -14,7 +17,10 @@ use super::{bits_to_rate, keccakf::KeccakF, Hasher, KeccakState};
 /// [`Keccak SHA3 submission`]: https://keccak.team/files/Keccak-submission-3.pdf
 #[derive(Clone)]
 pub struct Keccak {
+    #[cfg(not(target_os = "zkvm"))]
     state: KeccakState<KeccakF>,
+    #[cfg(target_os = "zkvm")]
+    state: Keccak256,
 }
 
 impl Keccak {
@@ -48,9 +54,20 @@ impl Keccak {
         Keccak::new(512)
     }
 
+    #[cfg(not(target_os = "zkvm"))]
     fn new(bits: usize) -> Keccak {
         Keccak {
             state: KeccakState::new(bits_to_rate(bits), Self::DELIM),
+        }
+    }
+
+    #[cfg(target_os = "zkvm")]
+    fn new(bits: usize) -> Keccak {
+        if bits != 256 {
+            panic!("Only Keccak256 is supported for ZKVM");
+        }
+        Keccak {
+            state: Keccak256::new(),
         }
     }
 }
