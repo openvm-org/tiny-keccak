@@ -1,0 +1,17 @@
+[package]
+name = "zkvm-host-test"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+openvm-sdk = { git = "https://github.com/openvm-org/openvm", branch = "develop-v1.6.0", default-features = false }
+openvm-stark-sdk = { git = "https://github.com/openvm-org/stark-backend.git", tag = "v1.2.3", default-features = false }
+openvm-build = { git = "https://github.com/openvm-org/openvm", branch = "develop-v1.6.0" }
+eyre = "0.6"
+
+[[bin]]
+name = "verify-keccak-chips"
+path = "src/main.rs"
+
+# Keep this package independent from the parent workspace
+[workspace]
