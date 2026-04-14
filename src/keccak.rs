@@ -105,6 +105,13 @@ impl Hasher for Keccak {
     /// #
     /// ```
     fn finalize(self, output: &mut [u8]) {
+        #[cfg(target_os = "zkvm")]
+        {
+            assert!(output.len() >= 32, "output buffer too small");
+            // SAFETY: output is at least 32 bytes (checked above).
+            unsafe { self.state.finalize(output) };
+        }
+        #[cfg(not(target_os = "zkvm"))]
         self.state.finalize(output);
     }
 }
