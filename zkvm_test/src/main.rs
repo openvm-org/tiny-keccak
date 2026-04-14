@@ -2,8 +2,15 @@ use std::path::PathBuf;
 
 use eyre::{eyre, Result};
 use openvm_build::TargetFilter;
-use openvm_sdk::{config::SdkVmConfig, Sdk, StdIn};
-use openvm_stark_sdk::config::setup_tracing;
+use openvm_sdk::{
+    config::{AggregationSystemParams, AppConfig},
+    Sdk, StdIn,
+};
+use openvm_sdk_config::SdkVmConfig;
+use openvm_stark_sdk::{
+    config::{app_params_with_100_bits_security, MAX_APP_LOG_STACKED_HEIGHT},
+    utils::setup_tracing,
+};
 
 const KECCAK_AIR_PREFIXES: &[&str] = &["Keccakf", "Xorin"];
 
@@ -14,10 +21,14 @@ fn main() -> Result<()> {
     let openvm_toml_path = guest_dir.join("openvm.toml");
     let openvm_toml = std::fs::read_to_string(&openvm_toml_path)
         .map_err(|e| eyre!("Failed to read {openvm_toml_path:?}: {e}"))?;
-    let app_config = SdkVmConfig::from_toml(&openvm_toml)
+    let vm_config = SdkVmConfig::from_toml(&openvm_toml)
         .map_err(|e| eyre!("Failed to parse openvm.toml: {e}"))?;
+    let app_config = AppConfig::new(
+        vm_config,
+        app_params_with_100_bits_security(MAX_APP_LOG_STACKED_HEIGHT),
+    );
 
-    let sdk = Sdk::new(app_config)?;
+    let sdk = Sdk::new(app_config, AggregationSystemParams::default())?;
     let target_filter = Some(TargetFilter {
         name: "keccak".to_string(),
         kind: "example".to_string(),
