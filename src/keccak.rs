@@ -14,6 +14,9 @@ use openvm_keccak256::Keccak256;
 /// tiny-keccak = { version = "2.0.0", features = ["keccak"] }
 /// ```
 ///
+/// On the zkvm target only Keccak-256 is supported: the [`v224`], [`v384`]
+/// and [`v512`] constructors are compiled out.
+///
 /// [`Keccak SHA3 submission`]: https://keccak.team/files/Keccak-submission-3.pdf
 #[derive(Clone)]
 pub struct Keccak {
@@ -28,7 +31,10 @@ impl Keccak {
 
     /// Creates  new [`Keccak`] hasher with a security level of 224 bits.
     ///
+    /// Not available on the zkvm target, which only supports Keccak-256.
+    ///
     /// [`Keccak`]: struct.Keccak.html
+    #[cfg(not(target_os = "zkvm"))]
     pub fn v224() -> Keccak {
         Keccak::new(224)
     }
@@ -42,14 +48,20 @@ impl Keccak {
 
     /// Creates  new [`Keccak`] hasher with a security level of 384 bits.
     ///
+    /// Not available on the zkvm target, which only supports Keccak-256.
+    ///
     /// [`Keccak`]: struct.Keccak.html
+    #[cfg(not(target_os = "zkvm"))]
     pub fn v384() -> Keccak {
         Keccak::new(384)
     }
 
     /// Creates  new [`Keccak`] hasher with a security level of 512 bits.
     ///
+    /// Not available on the zkvm target, which only supports Keccak-256.
+    ///
     /// [`Keccak`]: struct.Keccak.html
+    #[cfg(not(target_os = "zkvm"))]
     pub fn v512() -> Keccak {
         Keccak::new(512)
     }
@@ -112,8 +124,9 @@ impl Hasher for Keccak {
     fn finalize(self, output: &mut [u8]) {
         #[cfg(target_os = "zkvm")]
         {
-            assert!(
-                output.len() == 32,
+            assert_eq!(
+                output.len(),
+                32,
                 "only 32-byte output buffers are supported for ZKVM"
             );
             // SAFETY: output is exactly 32 bytes (checked above).
