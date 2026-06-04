@@ -92,6 +92,11 @@ impl Hasher for Keccak {
 
     /// Pad and squeeze the state to the output.
     ///
+    /// On the zkvm target only 32-byte outputs are supported: the native
+    /// Keccak-256 intrinsic writes exactly 32 bytes, so any other output
+    /// length panics instead of silently diverging from the host build,
+    /// which squeezes `output.len()` bytes.
+    ///
     /// # Example
     ///
     /// ```
@@ -107,8 +112,11 @@ impl Hasher for Keccak {
     fn finalize(self, output: &mut [u8]) {
         #[cfg(target_os = "zkvm")]
         {
-            assert!(output.len() >= 32, "output buffer too small");
-            // SAFETY: output is at least 32 bytes (checked above).
+            assert!(
+                output.len() == 32,
+                "only 32-byte output buffers are supported for ZKVM"
+            );
+            // SAFETY: output is exactly 32 bytes (checked above).
             unsafe { self.state.finalize(output) };
         }
         #[cfg(not(target_os = "zkvm"))]
