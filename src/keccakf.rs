@@ -47,6 +47,9 @@ impl Permutation for KeccakF {
         // The native instruction reads the state as 200 raw bytes. This
         // matches the layout of `[u64; 25]` only on a little-endian target,
         // which the compile guard above enforces.
-        openvm_keccak256_guest::native_keccakf(buffer.words().as_mut_ptr() as *mut u8);
+        // SAFETY: `buffer.words()` is `[u64; 25]` = 200 bytes, as required.
+        unsafe {
+            openvm_keccak256_guest::native_keccakf(buffer.words().as_mut_ptr() as *mut u8);
+        }
     }
 }

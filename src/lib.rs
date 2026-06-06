@@ -339,11 +339,16 @@ impl Buffer {
             assert!(dst.len() <= src.len());
             const MAX_XORIN_LEN: usize = openvm_keccak256_guest::KECCAK_RATE;
             for (i, chunk) in dst.chunks_mut(MAX_XORIN_LEN).enumerate() {
-                openvm_keccak256_guest::native_xorin(
-                    chunk.as_mut_ptr(),
-                    src[i * MAX_XORIN_LEN..].as_ptr(),
-                    chunk.len(),
-                );
+                // SAFETY: `chunk` is valid for `chunk.len()` writes, and the
+                // assert above guarantees `src[i * MAX_XORIN_LEN..]` has at
+                // least `chunk.len()` bytes.
+                unsafe {
+                    openvm_keccak256_guest::native_xorin(
+                        chunk.as_mut_ptr(),
+                        src[i * MAX_XORIN_LEN..].as_ptr(),
+                        chunk.len(),
+                    );
+                }
             }
         });
     }
