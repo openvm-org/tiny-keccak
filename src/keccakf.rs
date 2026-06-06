@@ -31,10 +31,22 @@ const RC: [u64; ROUNDS] = [
 
 keccak_function!("`keccak-f[1600, 24]`", keccakf, ROUNDS, RC);
 
+#[cfg(all(target_os = "zkvm", target_endian = "big"))]
+compile_error!("the native keccakf path assumes the zkvm target is little-endian");
+
 pub struct KeccakF;
 
 impl Permutation for KeccakF {
+    #[cfg(not(target_os = "zkvm"))]
     fn execute(buffer: &mut Buffer) {
         keccakf(buffer.words());
+    }
+
+    #[cfg(target_os = "zkvm")]
+    fn execute(buffer: &mut Buffer) {
+        // The native instruction reads the state as 200 raw bytes. This
+        // matches the layout of `[u64; 25]` only on a little-endian target,
+        // which the compile guard above enforces.
+        openvm_keccak256_guest::native_keccakf(buffer.words().as_mut_ptr() as *mut u8);
     }
 }

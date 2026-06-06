@@ -333,6 +333,22 @@ impl Buffer {
         self.execute(offset, len, |buffer| dst[..len].copy_from_slice(buffer));
     }
 
+    #[cfg(target_os = "zkvm")]
+    fn xorin(&mut self, src: &[u8], offset: usize, len: usize) {
+        self.execute(offset, len, |dst| {
+            assert!(dst.len() <= src.len());
+            const MAX_XORIN_LEN: usize = openvm_keccak256_guest::KECCAK_RATE;
+            for (i, chunk) in dst.chunks_mut(MAX_XORIN_LEN).enumerate() {
+                openvm_keccak256_guest::native_xorin(
+                    chunk.as_mut_ptr(),
+                    src[i * MAX_XORIN_LEN..].as_ptr(),
+                    chunk.len(),
+                );
+            }
+        });
+    }
+
+    #[cfg(not(target_os = "zkvm"))]
     fn xorin(&mut self, src: &[u8], offset: usize, len: usize) {
         self.execute(offset, len, |dst| {
             assert!(dst.len() <= src.len());
