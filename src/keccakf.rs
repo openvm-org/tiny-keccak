@@ -44,6 +44,10 @@ impl Permutation for KeccakF {
 
     #[cfg(target_os = "zkvm")]
     fn execute(buffer: &mut Buffer) {
+        const _: () = assert!(
+            ROUNDS == 24,
+            "the native keccakf instruction implements exactly 24 rounds"
+        );
         // The native instruction reads the state as 200 raw bytes. This
         // matches the layout of `[u64; 25]` only on a little-endian target,
         // which the compile guard above enforces.
