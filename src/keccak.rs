@@ -2,9 +2,6 @@
 
 use super::{bits_to_rate, keccakf::KeccakF, Hasher, KeccakState};
 
-#[cfg(target_os = "zkvm")]
-use openvm_keccak256::Keccak256;
-
 /// The `Keccak` hash functions defined in [`Keccak SHA3 submission`].
 ///
 /// # Usage
@@ -14,13 +11,14 @@ use openvm_keccak256::Keccak256;
 /// tiny-keccak = { version = "2.0.0", features = ["keccak"] }
 /// ```
 ///
+/// On the zkvm target the keccak-f[1600] permutation and absorption are
+/// delegated to the native openvm keccak instructions; all variants and
+/// output lengths behave identically to the host build.
+///
 /// [`Keccak SHA3 submission`]: https://keccak.team/files/Keccak-submission-3.pdf
 #[derive(Clone)]
 pub struct Keccak {
-    #[cfg(not(target_os = "zkvm"))]
     state: KeccakState<KeccakF>,
-    #[cfg(target_os = "zkvm")]
-    state: Keccak256,
 }
 
 impl Keccak {
@@ -54,20 +52,9 @@ impl Keccak {
         Keccak::new(512)
     }
 
-    #[cfg(not(target_os = "zkvm"))]
     fn new(bits: usize) -> Keccak {
         Keccak {
             state: KeccakState::new(bits_to_rate(bits), Self::DELIM),
-        }
-    }
-
-    #[cfg(target_os = "zkvm")]
-    fn new(bits: usize) -> Keccak {
-        if bits != 256 {
-            panic!("Only Keccak256 is supported for ZKVM");
-        }
-        Keccak {
-            state: Keccak256::new(),
         }
     }
 }
@@ -105,13 +92,6 @@ impl Hasher for Keccak {
     /// #
     /// ```
     fn finalize(self, output: &mut [u8]) {
-        #[cfg(target_os = "zkvm")]
-        {
-            assert!(output.len() >= 32, "output buffer too small");
-            // SAFETY: output is at least 32 bytes (checked above).
-            unsafe { self.state.finalize(output) };
-        }
-        #[cfg(not(target_os = "zkvm"))]
         self.state.finalize(output);
     }
 }

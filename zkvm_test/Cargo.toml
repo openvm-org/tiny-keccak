@@ -4,10 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-openvm-sdk = { git = "https://github.com/openvm-org/openvm", branch = "develop-v2.0.0-rc.1", default-features = false }
-openvm-sdk-config = { git = "https://github.com/openvm-org/openvm", branch = "develop-v2.0.0-rc.1", default-features = false }
+openvm-sdk = { git = "https://github.com/openvm-org/openvm", branch = "develop-v2.0.0-rc.2", default-features = false }
+openvm-sdk-config = { git = "https://github.com/openvm-org/openvm", branch = "develop-v2.0.0-rc.2", default-features = false }
 openvm-stark-sdk = { git = "https://github.com/openvm-org/stark-backend.git", branch = "develop-v2", default-features = false }
-openvm-build = { git = "https://github.com/openvm-org/openvm", branch = "develop-v2.0.0-rc.1" }
+openvm-build = { git = "https://github.com/openvm-org/openvm", branch = "develop-v2.0.0-rc.2" }
 eyre = "0.6"
 
 [[bin]]

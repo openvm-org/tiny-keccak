@@ -4,6 +4,7 @@ use eyre::{eyre, Result};
 use openvm_build::TargetFilter;
 use openvm_sdk::{
     config::{AggregationSystemParams, AppConfig},
+    prover::verify_app_proof,
     Sdk, StdIn,
 };
 use openvm_sdk_config::SdkVmConfig;
@@ -38,7 +39,7 @@ fn main() -> Result<()> {
 
     // Create app_prover to get access to the VM (for metered execution)
     // and the converted exe, without constructing them separately.
-    let app_prover = sdk.app_prover(exe)?;
+    let mut app_prover = sdk.app_prover(exe)?.with_program_name("tiny-keccak-zkvm-test");
     let vm = app_prover.vm();
     let exe = app_prover.exe();
 
@@ -84,11 +85,20 @@ fn main() -> Result<()> {
 
     if any_keccak_used {
         println!("PASS: Keccak chips have non-zero trace heights.");
-        Ok(())
     } else {
-        Err(eyre!(
+        return Err(eyre!(
             "FAIL: All keccak chip trace heights are zero.\n\
              The keccak chips are not being used; the patch may not be working correctly."
         ))
     }
+
+    println!("Generating app proof...");
+    let proof = app_prover.prove(StdIn::default())?;
+
+    let (_app_pk, app_vk) = sdk.app_keygen();
+    verify_app_proof::<openvm_sdk::DefaultStarkEngine>(&app_vk, &proof)
+        .map_err(|e| eyre!("App proof verification failed: {e}"))?;
+
+    println!("PASS: App proof generated and verified.");
+    Ok(())
 }
