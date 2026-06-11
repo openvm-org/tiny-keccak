@@ -5,27 +5,94 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 use hex::FromHex;
-use tiny_keccak::{Hasher, Keccak, Shake};
+use tiny_keccak::{CShake, Hasher, KangarooTwelve, Keccak, Sha3, Shake};
 
 openvm::entry!(main);
 
 fn main() {
-    // Keccak-256
+    // Keccak-224 (Keccak team KAT, 160-byte message)
+    let input = Vec::from_hex("21CFDC2A7CCB7F331B3D2EEFFF37E48AD9FA9C788C3F3C200E0173D99963E1CBCA93623B264E920394AE48BB4C3A5BB96FFBC8F0E53F30E22956ADABC2765F57FB761E147ECBF8567533DB6E50C8A1F894310A94EDF806DD8CA6A0E141C0FA7C9FAE6C6AE65F18C93A8529E6E5B553BF55F25BE2E80A9882BD37F145FECBEB3D447A3C4E46C21524CC55CDD62F521AB92A8BA72B897996C49BB273198B7B1C9E").unwrap();
+    let mut output = [0u8; 28];
+    let mut h = Keccak::v224();
+    h.update(&input);
+    h.finalize(&mut output);
+    if output[..] != *Vec::from_hex("3FB7392A6621B852312A374C14A679AFB0E3D2EC6A2D147BD5E873F6").unwrap() {
+        panic!("Keccak-224 hash mismatch");
+    }
+
+    // Keccak-256 (Keccak team KAT, 64-byte message)
     let input = Vec::from_hex("E926AE8B0AF6E53176DBFFCC2A6B88C6BD765F939D3D178A9BDE9EF3AA131C61E31C1E42CDFAF4B4DCDE579A37E150EFBEF5555B4C1CB40439D835A724E2FAE7").unwrap();
-    let expected =
-        Vec::from_hex("574271CD13959E8DDEAE5BFBDB02A3FDF54F2BABFD0CBEB893082A974957D0C1").unwrap();
-
-    let mut hasher = Keccak::v256();
     let mut output = [0u8; 32];
-
-    hasher.update(&input);
-    hasher.finalize(&mut output);
-
-    if output[..] != expected[..] {
+    let mut h = Keccak::v256();
+    h.update(&input);
+    h.finalize(&mut output);
+    if output[..] != *Vec::from_hex("574271CD13959E8DDEAE5BFBDB02A3FDF54F2BABFD0CBEB893082A974957D0C1").unwrap() {
         panic!("Keccak-256 hash mismatch");
     }
 
-    // SHAKE-128
+    // Keccak-384 (Keccak team KAT, 104-byte message = exact rate)
+    let input = Vec::from_hex("E35780EB9799AD4C77535D4DDB683CF33EF367715327CF4C4A58ED9CBDCDD486F669F80189D549A9364FA82A51A52654EC721BB3AAB95DCEB4A86A6AFA93826DB923517E928F33E3FBA850D45660EF83B9876ACCAFA2A9987A254B137C6E140A21691E1069413848").unwrap();
+    let mut output = [0u8; 48];
+    let mut h = Keccak::v384();
+    h.update(&input);
+    h.finalize(&mut output);
+    if output[..] != *Vec::from_hex("9FB5700502E01926824F46E9F61894F9487DBCF8AE6217203C85606F975566539376D6239DB04AEF9BF48CA4F191A90B").unwrap() {
+        panic!("Keccak-384 hash mismatch");
+    }
+
+    // Keccak-512 (Keccak team KAT, 72-byte message = exact rate)
+    let input = Vec::from_hex("1EED9CBA179A009EC2EC5508773DD305477CA117E6D569E66B5F64C6BC64801CE25A8424CE4A26D575B8A6FB10EAD3FD1992EDDDEEC2EBE7150DC98F63ADC3237EF57B91397AA8A7").unwrap();
+    let mut output = [0u8; 64];
+    let mut h = Keccak::v512();
+    h.update(&input);
+    h.finalize(&mut output);
+    if output[..] != *Vec::from_hex("6B4B0F126863552A6F40F45E295DC79B9BA2A88EA7C3B2F607AC1A8431A97844C2A7B664443FB23C05739DF5494FE9824DB80B7F3E67872142F17E2C5544E1EF").unwrap() {
+        panic!("Keccak-512 hash mismatch");
+    }
+
+    // SHA3-224 (FIPS 202 digest of the KAT 144-byte message = exact rate)
+    let input = Vec::from_hex("157D5B7E4507F66D9A267476D33831E7BB768D4D04CC3438DA12F9010263EA5FCAFBDE2579DB2F6B58F911D593D5F79FB05FE3596E3FA80FF2F761D1B0E57080055C118C53E53CDB63055261D7C9B2B39BD90ACC32520CBBDBDA2C4FD8856DBCEE173132A2679198DAF83007A9B5C51511AE49766C792A29520388444EBEFE28256FB33D4260439CBA73A9479EE00C63").unwrap();
+    let mut output = [0u8; 28];
+    let mut h = Sha3::v224();
+    h.update(&input);
+    h.finalize(&mut output);
+    if output[..] != *Vec::from_hex("D5134200DC98F4CA480CD24D24497737252B55977AE5A869BA27089D").unwrap() {
+        panic!("SHA3-224 hash mismatch");
+    }
+
+    // SHA3-256 (FIPS 202 digest of the KAT 8-byte message)
+    let input = Vec::from_hex("4A4F202484512526").unwrap();
+    let mut output = [0u8; 32];
+    let mut h = Sha3::v256();
+    h.update(&input);
+    h.finalize(&mut output);
+    if output[..] != *Vec::from_hex("BA4FB009D57A5CEB85FC64D54E5C55A55854B41CC47AD15294BC41F32165DFBA").unwrap() {
+        panic!("SHA3-256 hash mismatch");
+    }
+
+    // SHA3-384 (FIPS 202 digest of the KAT 200-byte message = multi-block)
+    let input = Vec::from_hex("8C3798E51BC68482D7337D3ABB75DC9FFE860714A9AD73551E120059860DDE24AB87327222B64CF774415A70F724CDF270DE3FE47DDA07B61C9EF2A3551F45A5584860248FABDE676E1CD75F6355AA3EAEABE3B51DC813D9FB2EAA4F0F1D9F834D7CAD9C7C695AE84B329385BC0BEF895B9F1EDF44A03D4B410CC23A79A6B62E4F346A5E8DD851C2857995DDBF5B2D717AEB847310E1F6A46AC3D26A7F9B44985AF656D2B7C9406E8A9E8F47DCB4EF6B83CAACF9AEFB6118BFCFF7E44BEF6937EBDDC89186839B77").unwrap();
+    let mut output = [0u8; 48];
+    let mut h = Sha3::v384();
+    h.update(&input);
+    h.finalize(&mut output);
+    if output[..] != *Vec::from_hex("27CEF65D1AECB7051BAD55DA0D601BC9D7A16D938A5715374A43109DD41B5C27D26C91CB44E4B47002D9B90ABA0584D1").unwrap() {
+        panic!("SHA3-384 hash mismatch");
+    }
+
+    // SHA3-512 (FIPS 202 digest of the KAT 255-byte message = multi-block)
+    let input = Vec::from_hex("3A3A819C48EFDE2AD914FBF00E18AB6BC4F14513AB27D0C178A188B61431E7F5623CB66B23346775D386B50E982C493ADBBFC54B9A3CD383382336A1A0B2150A15358F336D03AE18F666C7573D55C4FD181C29E6CCFDE63EA35F0ADF5885CFC0A3D84A2B2E4DD24496DB789E663170CEF74798AA1BBCD4574EA0BBA40489D764B2F83AADC66B148B4A0CD95246C127D5871C4F11418690A5DDF01246A0C80A43C70088B6183639DCFDA4125BD113A8F49EE23ED306FAAC576C3FB0C1E256671D817FC2534A52F5B439F72E424DE376F4C565CCA82307DD9EF76DA5B7C4EB7E085172E328807C02D011FFBF33785378D79DC266F6A5BE6BB0E4A92ECEEBAEB1").unwrap();
+    let mut output = [0u8; 64];
+    let mut h = Sha3::v512();
+    h.update(&input);
+    h.finalize(&mut output);
+    if output[..] != *Vec::from_hex("6E8B8BD195BDD560689AF2348BDC74AB7CD05ED8B9A57711E9BE71E9726FDA4591FEE12205EDACAF82FFBBAF16DFF9E702A708862080166C2FF6BA379BC7FFC2").unwrap() {
+        panic!("SHA3-512 hash mismatch");
+    }
+
+    // SHAKE-128 (FIPS 202 example "SHAKE128_Msg1600"): 0xA3 x 200 absorbed in
+    // one update (full-rate 168-byte chunked xorin) with the full published
+    // 4096-bit output (512-byte finalize crossing the rate boundary).
     let expected = Vec::from_hex(
         "131AB8D2B594946B9C81333F9BB6E0CE75C3B93104FA3469D3917457385DA037\
          CF232EF7164A6D1EB448C8908186AD852D3F85A5CF28DA1AB6FE343817197846\
@@ -54,5 +121,32 @@ fn main() {
 
     if output[..] != expected[..] {
         panic!("SHAKE-128 output mismatch");
+    }
+
+    // cSHAKE-256 (NIST SP 800-185), customization "Email Signature"
+    let mut cshake = CShake::v256(b"", b"Email Signature");
+    let mut output = [0u8; 64];
+    cshake.update(b"\x00\x01\x02\x03");
+    cshake.finalize(&mut output);
+    if output
+        != *b"\xD0\x08\x82\x8E\x2B\x80\xAC\x9D\x22\x18\xFF\xEE\x1D\x07\x0C\x48\
+              \xB8\xE4\xC8\x7B\xFF\x32\xC9\x69\x9D\x5B\x68\x96\xEE\xE0\xED\xD1\
+              \x64\x02\x0E\x2B\xE0\x56\x08\x58\xD9\xC0\x0C\x03\x7E\x34\xA9\x69\
+              \x37\xC5\x61\xA7\x4C\x41\x2B\xB4\xC7\x46\x46\x95\x27\x28\x1C\x8C"
+    {
+        panic!("cSHAKE-256 output mismatch");
+    }
+
+    // KangarooTwelve (keccak-p[1600,12]; software permutation + native xorin),
+    // empty message and customization.
+    let mut k12 = KangarooTwelve::new(b"");
+    let mut output = [0u8; 32];
+    k12.update(b"");
+    k12.finalize(&mut output);
+    if output
+        != *b"\x1a\xc2\xd4\x50\xfc\x3b\x42\x05\xd1\x9d\xa7\xbf\xca\x1b\x37\x51\
+              \x3c\x08\x03\x57\x7a\xc7\x16\x7f\x06\xfe\x2c\xe1\xf0\xef\x39\xe5"
+    {
+        panic!("KangarooTwelve output mismatch");
     }
 }
